@@ -2,8 +2,10 @@ package com.example.nashua.mysunshine;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.text.format.Time;
@@ -53,9 +55,24 @@ public class ForecastFragment extends Fragment {
     }
 
     @Override
+    public void onStart()
+    {
+        super.onStart();
+        updateWeather();
+    }
+
+    @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater)
     {
         inflater.inflate(R.menu.forecastfragment, menu);
+    }
+
+    private void updateWeather()
+    {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+        String location = sharedPref.getString(getString(R.string.pref_location_key), getString(R.string.pref_location_default));
+        String units = sharedPref.getString(getString(R.string.pref_units_key), getString(R.string.pref_units_default));
+        new FetchWeatherTask().execute(location, units);
     }
 
     @Override
@@ -64,8 +81,7 @@ public class ForecastFragment extends Fragment {
         int id = item.getItemId();
         if (id == R.id.action_refresh)
         {
-            new FetchWeatherTask().execute("94043");
-
+            updateWeather();
             return true;
         }
 
@@ -75,10 +91,12 @@ public class ForecastFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        String[] items = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+/*        String[] items = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
                 "Saturday" };
 
         List<String> weekForecast = new ArrayList<String>(Arrays.asList(items));
+*/
+        List<String> weekForecast = new ArrayList<String>();
 
         mForecastAdapter =
                 new ArrayAdapter<String>(
@@ -125,7 +143,6 @@ public class ForecastFragment extends Fragment {
             String forecastJsonStr = null;
 
             String mode = "json";
-            String units = "metric";
             int numDays = 7;
 
             try {
@@ -142,7 +159,7 @@ public class ForecastFragment extends Fragment {
                 Uri builtUri = Uri.parse(FORECAST_BASE_URL).buildUpon()
                 .appendQueryParameter(QUERY_PARAM, params[0])
                 .appendQueryParameter(FORMAT_PARAM, mode)
-                .appendQueryParameter(UNITS_PARAM, units)
+                .appendQueryParameter(UNITS_PARAM, params[1])
                 .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
                 .appendQueryParameter(APP_ID_PARAM, "2468123c8cebfd8c8dd95d4715e8482c")
                 .build();
